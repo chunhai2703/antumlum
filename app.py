@@ -28,6 +28,7 @@ class Customer(db.Model):
     phone = db.Column(db.String(30), unique=True, nullable=False)
     email = db.Column(db.String(120))
     password_hash = db.Column(db.String(255))
+    activation_code_hash = db.Column(db.String(255))
     member_token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(24))
     points = db.Column(db.Integer, default=0, nullable=False)
     total_spent = db.Column(db.Integer, default=0, nullable=False)
@@ -147,8 +148,10 @@ def customer_new():
     if not name or not phone: flash('Vui lòng nhập tên và số điện thoại.', 'error')
     elif Customer.query.filter_by(phone=phone).first(): flash('Số điện thoại này đã tồn tại.', 'error')
     else:
-        db.session.add(Customer(name=name, phone=phone, email=request.form.get('email','').strip() or None)); db.session.commit()
-        flash('Đã thêm khách hàng. Khách có thể đăng ký tài khoản bằng số điện thoại này sau khi được xác minh tại quầy.', 'success')
+        activation_code = secrets.token_hex(4).upper()
+        customer = Customer(name=name, phone=phone, email=request.form.get('email','').strip() or None, activation_code_hash=generate_password_hash(activation_code))
+        db.session.add(customer); db.session.commit()
+        flash(f'Đã thêm khách hàng. Mã kích hoạt một lần: {activation_code} — hãy gửi riêng cho khách và không đăng công khai.', 'success')
     return redirect(url_for('customers'))
 
 @app.route('/customers/<int:customer_id>')
@@ -157,6 +160,19 @@ def customer_detail(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     transactions = Transaction.query.filter_by(customer_id=customer.id).order_by(Transaction.created_at.desc()).limit(50).all()
     return render_template('customer_detail.html', customer=customer, transactions=transactions)
+
+@app.route('/customers/<int:customer_id>/activation-code', methods=['POST'])
+@admin_required
+def customer_activation_code(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    if customer.password_hash:
+        flash('Khách hàng đã kích hoạt tài khoản, không cần mã mới.', 'error')
+    else:
+        activation_code = secrets.token_hex(4).upper()
+        customer.activation_code_hash = generate_password_hash(activation_code)
+        db.session.commit()
+        flash(f'Mã kích hoạt mới của {customer.name}: {activation_code} — mã cũ đã hết hiệu lực.', 'success')
+    return redirect(url_for('customer_detail', customer_id=customer.id))
 
 @app.route('/customers/<int:customer_id>/earn', methods=['POST'])
 @admin_required
@@ -310,6 +326,33 @@ def member_register():
             flash('Chào mừng bạn đến với AnTumLum!','success'); return redirect(url_for('member_home'))
     return render_template('member_auth.html',mode='register')
 
+@app.route('/member/activate', methods=['GET','POST'])
+def member_activate():
+    if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+        code = request.form.get('activation_code', '').strip().upper()
+        password = request.form.get('password', '')
+        confirm = request.form.get('confirm_password', '')
+        customer = Customer.query.filter_by(phone=phone).first()
+        if not customer:
+            flash('Không tìm thấy số điện thoại này. Vui lòng kiểm tra lại với nhân viên.', 'error')
+        elif customer.password_hash:
+            flash('Tài khoản này đã được kích hoạt. Hãy đăng nhập.', 'error')
+        elif not customer.activation_code_hash or not check_password_hash(customer.activation_code_hash, code):
+            flash('Mã kích hoạt không đúng hoặc đã được sử dụng. Vui lòng liên hệ nhân viên để cấp mã mới.', 'error')
+        elif len(password) < 8:
+            flash('Mật khẩu phải có ít nhất 8 ký tự.', 'error')
+        elif password != confirm:
+            flash('Mật khẩu xác nhận không khớp.', 'error')
+        else:
+            customer.password_hash = generate_password_hash(password)
+            customer.activation_code_hash = None
+            db.session.commit()
+            session.clear(); session['customer_id'] = customer.id; session['customer_name'] = customer.name
+            flash('Kích hoạt thành công! Điểm thưởng và lịch sử của bạn vẫn được giữ nguyên.', 'success')
+            return redirect(url_for('member_home'))
+    return render_template('member_auth.html', mode='activate')
+
 @app.route('/member/login',methods=['GET','POST'])
 def member_login():
     if request.method=='POST':
@@ -371,6 +414,7 @@ def initialize():
         dialect=db.engine.dialect.name
         additions=[]
         if 'password_hash' not in cols: additions.append('ALTER TABLE customer ADD COLUMN password_hash VARCHAR(255)')
+        if 'activation_code_hash' not in cols: additions.append('ALTER TABLE customer ADD COLUMN activation_code_hash VARCHAR(255)')
         if 'member_token' not in cols: additions.append('ALTER TABLE customer ADD COLUMN member_token VARCHAR(64)')
         for sql in additions: db.session.execute(text(sql))
         db.session.commit()
