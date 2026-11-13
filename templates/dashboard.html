@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Tổng quan · AnTumLum{% endblock %}{% block heading %}Tổng quan <span class="heading-emoji">✨</span>{% endblock %}
+{% block content %}
+<div class="welcome-banner"><div><span class="pill white">AN TUMLUM MEMBER CLUB</span><h2>Trao điểm yêu thương,<br>nhận ngàn ưu đãi! 💛</h2><p>Quản lý hội viên và những trải nghiệm ngọt ngào mỗi ngày.</p></div><div class="banner-art">🍩 <span>🧋</span> 🍪</div><div class="sunburst">✦</div></div>
+<div class="stats-grid">
+<div class="stat-card pink-bg"><div class="stat-icon">♡</div><span>Tổng khách hàng</span><strong>{{ "{:,}".format(customers) }}</strong><small>Hội viên AnTumLum</small></div>
+<div class="stat-card green-bg"><div class="stat-icon">⭐</div><span>Điểm đang lưu hành</span><strong>{{ "{:,}".format(points) }}</strong><small>Tổng điểm khả dụng</small></div>
+<div class="stat-card blue-bg"><div class="stat-icon">🧾</div><span>Tổng doanh thu ghi nhận</span><strong>{{ "{:,}".format(revenue) }}đ</strong><small>Từ hóa đơn tích điểm</small></div>
+<div class="stat-card yellow-bg"><div class="stat-icon">🎟</div><span>Giao dịch tích điểm</span><strong>{{ "{:,}".format(tx_count) }}</strong><small>Lịch sử giao dịch</small></div>
+</div>
+<div class="content-grid"><section class="panel"><div class="panel-head"><div><h3>Giao dịch gần đây</h3><p>Cập nhật hoạt động hội viên mới nhất</p></div><a class="text-link" href="{{ url_for('customers') }}">Xem khách hàng →</a></div>
+{% if recent %}<div class="table-wrap"><table><thead><tr><th>Khách hàng</th><th>Loại</th><th>Điểm</th><th>Thời gian</th></tr></thead><tbody>{% for t in recent %}<tr><td><b>{{ t.customer.name }}</b><small>{{ t.customer.phone }}</small></td><td><span class="tag {{ t.kind }}">{{ {'earn':'Tích điểm','redeem':'Đổi thưởng','adjustment':'Điều chỉnh'}[t.kind] }}</span></td><td class="{{ 'positive' if t.points>0 else 'negative' }}">{{ '+' if t.points>0 else '' }}{{ t.points }}</td><td>{{ t.created_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">Chưa có giao dịch nào. Hãy thêm khách hàng và ghi nhận hóa đơn đầu tiên nhé! 🍭</div>{% endif %}</section>
+<section class="panel top-panel"><div class="panel-head"><div><h3>⭐ Hội viên nổi bật</h3><p>Top điểm tích lũy</p></div></div>{% for c in top %}<div class="top-customer"><span class="rank">{{ loop.index }}</span><span class="customer-avatar">{{ c.name[:1]|upper }}</span><span class="customer-name"><b>{{ c.name }}</b><small>{{ c.phone }}</small></span><strong>{{ c.points }} <small>điểm</small></strong></div>{% else %}<div class="empty">Chưa có hội viên.</div>{% endfor %}<a class="btn soft full" href="{{ url_for('customers') }}">Quản lý hội viên</a></section></div>
+{% endblock %}

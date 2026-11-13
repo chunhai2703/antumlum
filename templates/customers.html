@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Khách hàng · AnTumLum{% endblock %}{% block heading %}Hội viên AnTumLum 💗{% endblock %}
+{% block content %}
+<div class="page-actions"><form class="search" method="get"><span>⌕</span><input name="q" value="{{ q }}" placeholder="Tìm theo tên hoặc số điện thoại..."><button class="btn soft">Tìm kiếm</button></form><button class="btn primary" onclick="openModal('newCustomer')">＋ Thêm khách hàng</button></div>
+<section class="panel"><div class="panel-head"><div><h3>Danh sách khách hàng</h3><p>{{ customers|length }} hội viên được tìm thấy</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Hội viên</th><th>Số điện thoại</th><th>Điểm hiện có</th><th>Tổng chi tiêu</th><th>Ngày tham gia</th><th></th></tr></thead><tbody>
+{% for c in customers %}<tr><td><div class="person"><span class="customer-avatar">{{ c.name[:1]|upper }}</span><b>{{ c.name }}</b></div></td><td>{{ c.phone }}</td><td><span class="points-pill">⭐ {{ c.points }}</span></td><td>{{ "{:,}".format(c.total_spent) }}đ</td><td>{{ c.created_at.strftime('%d/%m/%Y') }}</td><td><a class="text-link" href="{{ url_for('customer_detail',customer_id=c.id) }}">Chi tiết →</a></td></tr>
+{% else %}<tr><td colspan="6" class="empty">Không tìm thấy khách hàng phù hợp.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<div class="modal" id="newCustomer"><form class="modal-card" method="post" action="{{ url_for('customer_new') }}"><button type="button" class="modal-close" onclick="closeModal('newCustomer')">×</button><span class="pill pink">NEW MEMBER</span><h2>Thêm hội viên mới</h2><p>Thông tin cơ bản của khách hàng.</p><label>Họ và tên *</label><input name="name" placeholder="Ví dụ: Nguyễn Minh Anh" required><label>Số điện thoại *</label><input name="phone" placeholder="09xxxxxxxx" required><label>Email (không bắt buộc)</label><input type="email" name="email" placeholder="email@example.com"><button class="btn primary full">Lưu khách hàng</button></form></div>
+{% endblock %}

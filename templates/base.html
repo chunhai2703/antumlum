@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AnTumLum Loyalty{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head><body>
+{% if session.get('admin_id') %}
+<div class="app-shell">
+<aside class="sidebar">
+  <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">🍩</span><span><b>AnTumLum</b><small>SNACK BAR · LOYALTY</small></span></a>
+  <div class="side-label">MENU CHÍNH</div>
+  <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">▦ <span>Tổng quan</span></a>
+  <a class="nav-link {% if request.endpoint in ['customers','customer_detail'] %}active{% endif %}" href="{{ url_for('customers') }}">♡ <span>Khách hàng</span></a>
+  <a class="nav-link {% if request.endpoint=='pos' %}active{% endif %}" href="{{ url_for('pos') }}">▣ <span>Bán hàng / POS</span></a>
+  <a class="nav-link {% if request.endpoint in ['orders'] %}active{% endif %}" href="{{ url_for('orders') }}">↻ <span>Hóa đơn & thanh toán</span></a>
+  <a class="nav-link {% if request.endpoint=='vouchers' %}active{% endif %}" href="{{ url_for('vouchers') }}">🎟 <span>Voucher & đổi thưởng</span></a>
+  <a class="nav-link {% if request.endpoint=='settings' %}active{% endif %}" href="{{ url_for('settings') }}">⚙ <span>Cài đặt</span></a>
+  <div class="sidebar-bottom"><div class="mini-doodle">🍬 🧋 🍪</div><p>Ngọt ngào từng điểm thưởng!</p><a href="{{ url_for('logout') }}">↪ Đăng xuất</a></div>
+</aside>
+<main class="main"><header class="topbar"><div><span class="eyebrow">SNACK BAR · CUSTOMER CLUB</span><h1>{% block heading %}Xin chào!{% endblock %}</h1></div><div class="user-chip"><span class="avatar">A</span><span><b>{{ session.get('admin_name','Admin') }}</b><small>Quản trị viên</small></span></div></header>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-wrap">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+{% block content %}{% endblock %}
+<footer>© {{ now_year }} AnTumLum Snack Bar · Made with 🍭</footer></main></div>
+{% else %}
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="login-flashes">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+{% block public_content %}{% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='app.js') }}"></script></body></html>
