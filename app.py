@@ -298,6 +298,35 @@ def redeem():
     except (ValueError,TypeError): flash('Không thể đổi voucher.','error')
     return redirect(url_for('vouchers'))
 
+@app.route('/settings/password', methods=['POST'])
+@admin_required
+def change_admin_password():
+    admin = db.session.get(Admin, session.get('admin_id'))
+    if not admin:
+        session.clear()
+        flash('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error')
+        return redirect(url_for('login'))
+
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not check_password_hash(admin.password_hash, current_password):
+        flash('Mật khẩu hiện tại không chính xác.', 'error')
+    elif len(new_password) < 12:
+        flash('Mật khẩu mới phải có ít nhất 12 ký tự.', 'error')
+    elif new_password != confirm_password:
+        flash('Mật khẩu xác nhận không khớp.', 'error')
+    elif check_password_hash(admin.password_hash, new_password):
+        flash('Mật khẩu mới phải khác mật khẩu hiện tại.', 'error')
+    else:
+        admin.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Đã đổi mật khẩu Admin thành công. Hãy dùng mật khẩu mới cho lần đăng nhập tiếp theo.', 'success')
+
+    return redirect(url_for('settings'))
+
+
 @app.route('/settings',methods=['GET','POST'])
 @admin_required
 def settings():
